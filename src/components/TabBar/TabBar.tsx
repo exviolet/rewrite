@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useEditorStore } from "../../store/editorStore";
 import type { TmuxBinding } from "../../store/editorStore";
 import type { Theme } from "../../store/themeStore";
+import { useReferenceStore } from "../../store/referenceStore";
 import { isTauri } from "../../lib/platform";
 import { toast } from "../../store/toastStore";
 
@@ -92,8 +93,9 @@ export function TabBar({ sidePanel, onSidePanelToggle, onDownloadTab, onExportAl
     dragIndexRef.current = index;
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", String(index));
+    e.dataTransfer.setData("application/x-rewrite-tab-id", tabs[index].id);
     (e.currentTarget as HTMLElement).style.opacity = "0.4";
-  }, []);
+  }, [tabs]);
 
   const handleTabDragEnd = useCallback((e: React.DragEvent) => {
     (e.currentTarget as HTMLElement).style.opacity = "";
@@ -394,6 +396,7 @@ export function TabBar({ sidePanel, onSidePanelToggle, onDownloadTab, onExportAl
           binding={tabs.find((t) => t.id === ctxMenu.id)?.tmuxBinding ?? null}
           onClose={() => setCtxMenu(null)}
           onTogglePin={() => togglePin(ctxMenu.id)}
+          onShowInReference={() => useReferenceStore.getState().linkTab(ctxMenu.id)}
           onBindTmux={() => onBindTmux(ctxMenu.id)}
           onUnbindTmux={() => setTabBinding(ctxMenu.id, null)}
           onCloseTab={() => closeTab(ctxMenu.id)}
@@ -408,13 +411,14 @@ export function TabBar({ sidePanel, onSidePanelToggle, onDownloadTab, onExportAl
 }
 
 function TabContextMenu({
-  x, y, pinned, binding, onClose, onTogglePin, onBindTmux, onUnbindTmux, onCloseTab, onCloseOthers, onCloseRight, onCloseSaved, onCleanupEmpty,
+  x, y, pinned, binding, onClose, onTogglePin, onShowInReference, onBindTmux, onUnbindTmux, onCloseTab, onCloseOthers, onCloseRight, onCloseSaved, onCleanupEmpty,
 }: {
   x: number; y: number;
   pinned: boolean;
   binding: TmuxBinding | null;
   onClose: () => void;
   onTogglePin: () => void;
+  onShowInReference: () => void;
   onBindTmux: () => void;
   onUnbindTmux: () => void;
   onCloseTab: () => void;
@@ -460,6 +464,7 @@ function TabContextMenu({
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="border-b border-border/40">
+        {renderItem({ label: "Показать в reference", action: onShowInReference })}
         {renderItem({ label: pinned ? "Открепить таб" : "Закрепить таб", action: onTogglePin, shortcut: "Ctrl+P" })}
       </div>
       <div className="border-b border-border/40">{tmuxItems.map(renderItem)}</div>

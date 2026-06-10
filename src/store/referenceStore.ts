@@ -13,21 +13,41 @@ export function clampReferenceWidth(width: number): number {
   return Math.min(Math.max(width, REFERENCE_MIN_WIDTH), max);
 }
 
+export type ReferenceMode = "scratch" | "tab";
+
 interface ReferenceStore {
   text: string;
   width: number;
+  mode: ReferenceMode;
+  linkedTabId: string | null;
   setText: (text: string) => void;
   setWidth: (width: number) => void;
   clear: () => void;
-  hydrate: (data: { text: string; width: number }) => void;
+  linkTab: (tabId: string) => void;
+  unlink: () => void;
+  hydrate: (data: {
+    text: string;
+    width: number;
+    mode?: ReferenceMode;
+    linkedTabId?: string | null;
+  }) => void;
 }
 
 export const useReferenceStore = create<ReferenceStore>((set) => ({
   text: "",
   width: REFERENCE_DEFAULT_WIDTH,
+  mode: "scratch",
+  linkedTabId: null,
   setText: (text) => set({ text }),
   setWidth: (width) => set({ width: clampReferenceWidth(width) }),
   clear: () => set({ text: "" }),
-  hydrate: ({ text, width }) =>
-    set({ text, width: clampReferenceWidth(width) }),
+  linkTab: (tabId) => set({ mode: "tab", linkedTabId: tabId }),
+  unlink: () => set({ mode: "scratch", linkedTabId: null }),
+  hydrate: ({ text, width, mode, linkedTabId }) =>
+    set({
+      text,
+      width: clampReferenceWidth(width),
+      mode: mode ?? "scratch",
+      linkedTabId: linkedTabId ?? null,
+    }),
 }));
